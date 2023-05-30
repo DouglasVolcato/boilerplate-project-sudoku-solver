@@ -1,11 +1,97 @@
 class SudokuSolver {
   validate(puzzleString) {}
 
-  checkRowPlacement(puzzleString, row, column, value) {}
+  letterToNumber(letter) {
+    switch (letter.toUpperCase()) {
+      case "A":
+        return 1;
 
-  checkColPlacement(puzzleString, row, column, value) {}
+      case "B":
+        return 2;
 
-  checkRegionPlacement(puzzleString, row, column, value) {}
+      case "C":
+        return 3;
+
+      case "D":
+        return 4;
+
+      case "E":
+        return 5;
+
+      case "F":
+        return 6;
+
+      case "G":
+        return 7;
+
+      case "H":
+        return 8;
+
+      case "I":
+        return 9;
+
+      default:
+        return "none";
+    }
+  }
+
+  checkRowPlacement(puzzleString, row1, column, value) {
+    let grid = this.transform(puzzleString);
+    let row = this.letterToNumber(row1);
+
+    if (grid[row - 1][column - 1] !== 0) {
+      return false;
+    }
+
+    for (let i = 0; i < 9; i++) {
+      if (grid[row - 1][i] == value) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  checkColPlacement(puzzleString, row1, column, value) {
+    let grid = this.transform(puzzleString);
+    let row = this.letterToNumber(row1);
+
+    if (grid[row - 1][column - 1] !== 0) {
+      return false;
+    }
+
+    for (let i = 0; i < 9; i++) {
+      if (grid[i][column - 1] == value) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  checkRegionPlacement(puzzleString, row1, col, value) {
+    let grid = this.transform(puzzleString);
+    let row = this.letterToNumber(row1);
+
+    if (grid[row - 1][col - 1] !== 0) {
+      return false;
+    }
+
+    let startRow = row - (row % 3);
+    let startCol = col - (col % 3);
+
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        if (grid[i + startRow][j + startCol] == value) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return true;
+  }
 
   /* Takes a partially filled-in grid and attempts
     to assign values to all unassigned locations in
