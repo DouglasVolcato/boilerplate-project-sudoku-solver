@@ -11,10 +11,7 @@ module.exports = function (app) {
       return res.json({ error: "Required field(s) missing" });
     }
 
-    if (
-      coord.length > 2 ||
-      coord[0].toLowerCase().charCodeAt(0) - 97 + 1 > 10
-    ) {
+    if (coord.length > 2 || coord[0].toLowerCase().charCodeAt(0) - 97 + 1 > 9) {
       return res.json({ error: "Invalid coordinate" });
     }
 
