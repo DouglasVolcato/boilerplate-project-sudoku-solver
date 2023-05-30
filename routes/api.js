@@ -1,111 +1,53 @@
-"use strict";
-
 const SudokuSolver = require("../controllers/sudoku-solver.js");
 
 module.exports = function (app) {
   let solver = new SudokuSolver();
 
   app.route("/api/check").post((req, res) => {
-    try {
-      const { puzzle, coordinate, value } = req.body;
-      const row = coordinate.split("")[0];
-      const column = coordinate.split("")[1];
-
-      switch (true) {
-        case !puzzle || !coordinate || !value:
-          res.json({ error: "Required field(s) missing" });
-          return;
-
-        case coordinate.length !== 2 ||
-          !/[a-i]/i.test(row) ||
-          !/[1-9]/i.test(column):
-          res.json({ error: "Invalid coordinate" });
-          return;
-
-        case !/[1-9]/i.test(value):
-          res.json({ error: "Invalid value" });
-          return;
-
-        case puzzle.length !== 81:
-          res.json({ error: "Expected puzzle to be 81 characters long" });
-          return;
-
-        case !/[^0-9]/g.test(puzzle):
-          res.json({ error: "Invalid characters in puzzle" });
-          return;
-
-        default:
-          let validCol = solver.checkColPlacement(puzzle, row, column, value);
-          let validReg = solver.checkRegionPlacement(
-            puzzle,
-            row,
-            column,
-            value
-          );
-          let validRow = solver.checkRowPlacement(puzzle, row, column, value);
-          let conflicts = [];
-
-          if (validCol && validReg && validRow) {
-            res.json({ valid: true });
-            return;
-          }
-
-          if (!validRow) {
-            conflicts.push("row");
-          }
-
-          if (!validCol) {
-            conflicts.push("column");
-          }
-
-          if (!validRow) {
-            conflicts.push("region");
-          }
-
-          res.json({ valid: false, conflict: conflicts });
-          return;
-      }
-    } catch (error) {
-      res.json({ error: error.message });
-      return;
-    }
+    const puzzle = req.body.puzzle;
+    const coord = req.body.coordinate;
+    const value = req.body.value;
+    if (!puzzle || !coord || !value)
+      return res.json({ error: "Required field(s) missing" });
+    // check if puzzle is valid
+    const validate = solver.validate(puzzle);
+    if (validate[0] === false) return res.json(validate[1]);
+    // check if coordinate and value is valid
+    const coordRe = /^[a-iA-I]\d$/gi;
+    const valueRe = /^\d$/;
+    if (coordRe.test(coord) === false)
+      return res.json({ error: "Invalid coordinate" });
+    if (valueRe.test(value) === false)
+      return res.json({ error: "Invalid value" });
+    // seperate row and column
+    const row = coord.split("")[0];
+    const col = coord.split("")[1];
+    // check conflict
+    let conflicts = [];
+    const checkRow = solver.checkRow(validate[1], row, col, value);
+    const checkCol = solver.checkCol(validate[1], row, col, value);
+    const checkReg = solver.checkReg(validate[1], row, col, value);
+    if (checkRow !== true) conflicts.push(checkRow);
+    if (checkCol !== true) conflicts.push(checkCol);
+    if (checkReg !== true) conflicts.push(checkReg);
+    if (conflicts.length !== 0)
+      return res.json({ valid: false, conflict: conflicts });
+    // return true if true
+    res.json({ valid: true });
   });
 
   app.route("/api/solve").post((req, res) => {
-    try {
-      const { puzzle } = req.body;
-
-      if (!puzzle) {
-        res.json({ error: "Required field missing" });
-        return;
-      }
-
-      const solvedString = solver.solve(puzzle);
-
-      switch (true) {
-        case !puzzle:
-          res.json({ error: "Required field missing" });
-          return;
-
-        case puzzle.length !== 81:
-          res.json({ error: "Expected puzzle to be 81 characters long" });
-          return;
-
-        case /[^0-9.]/g.test(puzzle):
-          res.json({ error: "Invalid characters in puzzle" });
-          return;
-
-        case !solvedString:
-          res.json({ error: "Puzzle cannot be solved" });
-          return;
-
-        default:
-          res.json({ solution: solvedString });
-          return;
-      }
-    } catch (error) {
-      res.json({ error: error.message });
-      return;
-    }
+    const puzzle = req.body.puzzle;
+    // error on no puzzle
+    if (!puzzle) return res.json({ error: "Required field missing" });
+    // validate puzzle
+    const validate = solver.validate(puzzle);
+    if (validate[0] === false) return res.json(validate[1]);
+    // error if puzzle cannot be solved
+    const solution = solver.solve(validate[1]);
+    if (solution === false)
+      return res.json({ error: "Puzzle cannot be solved" });
+    // return puzzle solution
+    res.json({ solution: solution });
   });
 };

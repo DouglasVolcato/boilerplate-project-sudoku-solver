@@ -1,225 +1,126 @@
 class SudokuSolver {
-  validate(puzzleString) {}
-
-  letterToNumber(letter) {
-    switch (letter.toUpperCase()) {
-      case "A":
-        return 1;
-
-      case "B":
-        return 2;
-
-      case "C":
-        return 3;
-
-      case "D":
-        return 4;
-
-      case "E":
-        return 5;
-
-      case "F":
-        return 6;
-
-      case "G":
-        return 7;
-
-      case "H":
-        return 8;
-
-      case "I":
-        return 9;
-
-      default:
-        return "none";
-    }
+  constructor() {
+    this.isValid = this.isValid.bind(this);
+    this.solve = this.solve.bind(this);
+    this.rowToNum = this.rowToNum.bind(this);
   }
 
-  checkRowPlacement(puzzleString, row1, column, value) {
-    let grid = this.transform(puzzleString);
-    let row = this.letterToNumber(row1);
+  validate(puzzle) {
+    // error on invalid puzzle
+    const re = /^[\d.]+$/gi;
+    if (puzzle.length !== 81)
+      return [false, { error: "Expected puzzle to be 81 characters long" }];
+    if (re.test(puzzle) === false)
+      return [false, { error: "Invalid characters in puzzle" }];
+    // return puzzle string to array of rows to solve and check placement
+    let arr = puzzle.split("");
+    let a1 = [],
+      a2 = [],
+      a3 = [],
+      a4 = [],
+      a5 = [],
+      a6 = [],
+      a7 = [],
+      a8 = [],
+      a9 = [];
+    arr.forEach((itm, i) => {
+      let num = i + 1;
+      if (num / 9 <= 1) a1.push(itm);
+      if (num / 9 > 1 && num / 9 <= 2) a2.push(itm);
+      if (num / 9 > 2 && num / 9 <= 3) a3.push(itm);
+      if (num / 9 > 3 && num / 9 <= 4) a4.push(itm);
+      if (num / 9 > 4 && num / 9 <= 5) a5.push(itm);
+      if (num / 9 > 5 && num / 9 <= 6) a6.push(itm);
+      if (num / 9 > 6 && num / 9 <= 7) a7.push(itm);
+      if (num / 9 > 7 && num / 9 <= 8) a8.push(itm);
+      if (num / 9 > 8 && num / 9 <= 9) a9.push(itm);
+    });
+    const result = [a1, a2, a3, a4, a5, a6, a7, a8, a9];
+    return [true, result];
+  }
 
-    if (grid[row - 1][column - 1] !== 0) {
-      return false;
-    }
+  rowToNum(r) {
+    const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+    let num;
+    // convert row letter to number
+    rows.forEach((itm, i) => {
+      if (r.toUpperCase() === itm) num = i;
+    });
+    return num;
+  }
 
+  checkRow(puzzle, r, col, value) {
+    r = this.rowToNum(r);
+    col = col - 1;
+    let result = true;
+    // check if value is in row
+    puzzle[r].forEach((itm) => {
+      if (value == itm) result = "row";
+    });
+    // check if value is already in place
+    if (puzzle[r][col] == value) result = true;
+    return result;
+  }
+
+  checkCol(puzzle, r, col, value) {
+    r = this.rowToNum(r);
+    col = col - 1;
+    let result = true;
+    // check if value is in column
+    puzzle.forEach((itm) => {
+      if (value == itm[col]) result = "column";
+    });
+    // check if value is already in place
+    if (puzzle[r][col] == value) result = true;
+    return result;
+  }
+
+  checkReg(puzzle, r, col, value) {
+    r = this.rowToNum(r);
+    col = col - 1;
+    let result = true;
+    // check if value is in region
     for (let i = 0; i < 9; i++) {
-      if (grid[row - 1][i] == value) {
+      const m = 3 * Math.floor(r / 3) + Math.floor(i / 3);
+      const n = 3 * Math.floor(col / 3) + (i % 3);
+      if (value == puzzle[m][n]) result = "region";
+    }
+    // check if value is already in place
+    if (puzzle[r][col] == value) result = true;
+    return result;
+  }
+
+  isValid(puzzle, r, col, reg) {
+    for (let i = 0; i < 9; i++) {
+      const m = 3 * Math.floor(r / 3) + Math.floor(i / 3);
+      const n = 3 * Math.floor(col / 3) + (i % 3);
+      if (puzzle[r][i] == reg || puzzle[i][col] == reg || puzzle[m][n] == reg) {
         return false;
       }
     }
-
     return true;
   }
 
-  checkColPlacement(puzzleString, row1, column, value) {
-    let grid = this.transform(puzzleString);
-    let row = this.letterToNumber(row1);
-
-    if (grid[row - 1][column - 1] !== 0) {
-      return false;
-    }
-
-    for (let i = 0; i < 9; i++) {
-      if (grid[i][column - 1] == value) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  checkRegionPlacement(puzzleString, row1, col, value) {
-    let grid = this.transform(puzzleString);
-    let row = this.letterToNumber(row1);
-
-    if (grid[row - 1][col - 1] !== 0) {
-      return false;
-    }
-
-    let startRow = row - (row % 3);
-    let startCol = col - (col % 3);
-
-    for (let i = 0; i < 9; i++) {
-      for (let j = 0; j < 9; j++) {
-        if (grid[i + startRow][j + startCol] == value) {
+  solve(puzzle) {
+    for (let r = 0; r < 9; r++) {
+      for (let col = 0; col < 9; col++) {
+        if (puzzle[r][col] == ".") {
+          for (let reg = 1; reg <= 9; reg++) {
+            if (this.isValid(puzzle, r, col, reg)) {
+              puzzle[r][col] = reg;
+              // return array to string if exists for result solution
+              if (this.solve(puzzle)) {
+                return puzzle.toString().replace(/,/g, "");
+              } else {
+                puzzle[r][col] = ".";
+              }
+            }
+          }
           return false;
         }
       }
-
-      return true;
     }
-
     return true;
-  }
-
-  /* Takes a partially filled-in grid and attempts
-    to assign values to all unassigned locations in
-    such a way to meet the requirements for
-    Sudoku solution (non-duplication across rows,
-    columns, and boxes) */
-  solveSudoku(grid, row, col) {
-    /* If we have reached the 8th
-       row and 9th column (0
-       indexed matrix) ,
-       we are returning true to avoid further
-       backtracking       */
-    if (row == 9 - 1 && col == 9) return grid;
-
-    // Check if column value  becomes 9 ,
-    // we move to next row
-    // and column start from 0
-    if (col == 9) {
-      row++;
-      col = 0;
-    }
-
-    // Check if the current position
-    // of the grid already
-    // contains value >0, we iterate
-    // for next column
-    if (grid[row][col] != 0) return this.solveSudoku(grid, row, col + 1);
-
-    for (let num = 1; num < 10; num++) {
-      // Check if it is safe to place
-      // the num (1-9)  in the given
-      // row ,col ->we move to next column
-      if (this.isSafe(grid, row, col, num)) {
-        /*  assigning the num in the current
-            (row,col)  position of the grid and
-            assuming our assigned num in the position
-            is correct */
-        grid[row][col] = num;
-
-        // Checking for next
-        // possibility with next column
-        if (this.solveSudoku(grid, row, col + 1)) return grid;
-      }
-
-      /* removing the assigned num , since our
-           assumption was wrong , and we go for next
-           assumption with diff num value   */
-      grid[row][col] = 0;
-    }
-    return false;
-  }
-
-  // Check whether it will be legal
-  // to assign num to the
-  // given row, col
-  isSafe(grid, row, col, num) {
-    // Check if we find the same num
-    // in the similar row , we
-    // return false
-    for (let x = 0; x <= 8; x++) if (grid[row][x] == num) return false;
-
-    // Check if we find the same num
-    // in the similar column ,
-    // we return false
-    for (let x = 0; x <= 8; x++) if (grid[x][col] == num) return false;
-
-    // Check if we find the same num
-    // in the particular 3*3
-    // matrix, we return false
-    let startRow = row - (row % 3),
-      startCol = col - (col % 3);
-
-    for (let i = 0; i < 3; i++)
-      for (let j = 0; j < 3; j++)
-        if (grid[i + startRow][j + startCol] == num) return false;
-
-    return true;
-  }
-
-  //receive ..44..34..23
-  //return [[0,0,4,4,0,0,3,4,0], [0,2,3]]
-  transform(puzzleString) {
-    let grid = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    ];
-
-    let row = -1;
-    let col = 0;
-
-    for (let i = 0; i < puzzleString.length; i++) {
-      if (i % 9 == 0) {
-        row++;
-      }
-
-      if (col % 9 == 0) {
-        col = 0;
-      }
-
-      grid[row][col] = puzzleString[i] === "." ? 0 : puzzleString[i];
-      col++;
-    }
-
-    return grid;
-  }
-
-  transformBack(grid) {
-    return grid.flat().join("");
-  }
-
-  solve(puzzleString) {
-    let grid = this.transform(puzzleString);
-    let solved = this.solveSudoku(grid, 0, 0);
-
-    if (!solved) {
-      return false;
-    }
-
-    let solvedString = this.transformBack(solved);
-
-    return solvedString;
   }
 }
 
