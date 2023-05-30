@@ -7,6 +7,9 @@ module.exports = function (app) {
     const puzzle = req.body.puzzle;
     const coord = req.body.coordinate;
     const value = req.body.value;
+    if (!/[1-9]/.test(value)) {
+      return res.json({ error: "Invalid value" });
+    }
     if (!puzzle || !coord || !value)
       return res.json({ error: "Required field(s) missing" });
     // check if puzzle is valid
